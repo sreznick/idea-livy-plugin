@@ -1,6 +1,6 @@
 <idea-plugin>
-  <id>com.your.company.unique.plugin.id</id>
-  <name>Plugin display name here</name>
+  <id>com.intellij.plugin.livy</id>
+  <name>Livy plugin</name>
   <version>1.0</version>
   <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 
@@ -18,15 +18,12 @@
   <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
   <idea-version since-build="173.0"/>
 
-  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
-       on how to target different products -->
-  <!-- uncomment to enable plugin in all products
-  <depends>com.intellij.modules.lang</depends>
-  -->
-
   <extensions defaultExtensionNs="com.intellij">
-      <applicationService serviceImplementation="com.intellij.plugin.livy.Counter"/>
-</extensions>
+    <toolWindow id="LivyTerminal" secondary="true" anchor="right"
+                factoryClass="com.intellij.plugin.livy.TerminalFactory"/>
+    <toolWindow id="LivyConsole" secondary="true" anchor="bottom"
+                factoryClass="com.intellij.plugin.livy.ConsoleFactory"/>
+  </extensions>
 
   <actions>
   </actions>
