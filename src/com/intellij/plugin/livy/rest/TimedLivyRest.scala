@@ -52,7 +52,7 @@ trait TimedLivyRest extends LivyRest {
     measure(() => super.runStatement(sessionId, request))
   }
 
-  abstract override def getStatements(sessionId: Int): Future[Seq[GetStatements.Response]] = {
+  abstract override def getStatements(sessionId: Int): Future[GetStatements.Response] = {
     measure(() => super.getStatements(sessionId))
   }
 

@@ -1,5 +1,8 @@
 package com.intellij.plugin.livy
 
+import io.circe.{Decoder, HCursor}
+import io.circe._, io.circe.generic.semiauto._
+
 object ServerData {
   object SessionKind extends Enumeration {
     val Spark = Value("spark")
@@ -69,5 +72,18 @@ object ServerData {
 
   case class Statement(id: Int, code: String, state: String, output: Option[StatementOutput], progress: Float)
 
-  case class StatementOutput(status: String, execution_count: Int, data: Map[String, String])
+  case class OutputContents(plain: String)
+
+  object Decoders {
+    implicit val decodeOutputContents: Decoder[OutputContents] =
+      Decoder.forProduct1("text/plain")(OutputContents.apply)
+
+    implicit val decodeStatementOutput: Decoder[StatementOutput] =
+      Decoder.forProduct3("status", "execution_count", "data")(StatementOutput.apply)
+
+    implicit val decodeStatement: Decoder[Statement] =
+      Decoder.forProduct5("id", "code", "state", "output", "progress")(Statement.apply)
+  }
+
+  case class StatementOutput(status: String, executionCount: Int, data: OutputContents)
 }

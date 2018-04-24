@@ -28,6 +28,7 @@ abstract class Http4sLivyRest extends LivyRest with Http4sClientDsl[IO]  {
       v
   }
 
+  override def config = serverUri.toString
 
   def newSession(request: CreateSession.Request): Future[Session] = {
     val httpRequest = POST(serverUri.withPath("/sessions"),
@@ -81,19 +82,32 @@ abstract class Http4sLivyRest extends LivyRest with Http4sClientDsl[IO]  {
   }
 
   override def runStatement(sessionId: Int, request: PostStatements.Request): Future[Statement] = {
-    val httpRequest = POST(serverUri.withPath(s"/sessions/$sessionId/statements"),
-      request.asJson.pretty(Printer.noSpaces.copy(dropNullValues = true)))
+    val data = request.asJson.pretty(Printer.noSpaces.copy(dropNullValues = true))
+    val path = s"/sessions/$sessionId/statements"
+    val httpRequest = POST(serverUri.withPath(s"/sessions/$sessionId/statements"), data)
 
     Http1Client[IO]().flatMap { httpClient =>
       httpClient.expect[Statement](httpRequest)(jsonOf[IO, Statement])
     } unsafeToFuture()
   }
 
-  override def getStatements(sessionId: Int): Future[Seq[GetStatements.Response]] = {
+  override def getStatements(sessionId: Int): Future[GetStatements.Response] = {
     val httpRequest = GET(serverUri.withPath(s"/sessions/$sessionId/statements"))
 
+    import Decoders._
+
     Http1Client[IO]().flatMap { httpClient =>
-      httpClient.expect[Seq[GetStatements.Response]](httpRequest)(jsonOf[IO, Seq[GetStatements.Response]])
+      httpClient.expect[GetStatements.Response](httpRequest)(jsonOf[IO, GetStatements.Response])
+    } unsafeToFuture()
+  }
+
+  def getStatement(sessionId: Int, statementId: Int): Future[Statement] = {
+    val httpRequest = GET(serverUri.withPath(s"/sessions/$sessionId/statements/$statementId"))
+
+    import Decoders._
+
+    Http1Client[IO]().flatMap { httpClient =>
+      httpClient.expect[Statement](httpRequest)(jsonOf[IO, Statement])
     } unsafeToFuture()
   }
 }

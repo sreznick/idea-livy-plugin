@@ -30,13 +30,13 @@ class TerminalFactory extends ToolWindowFactory {
       }
       override def keyTyped(e: KeyEvent): Unit = {
         if (e.getKeyChar.toInt == 10) {
-          if (executor.get() == null && ConsoleFactory.consoleResult.get() != null) {
+          if (executor.get() == null && ConsoleFactory.consoleLog.get() != null) {
             //  rough logic, to be reconsidered
-            executor.set(new LivyExecutor(ConsoleFactory.consoleResult.get()))
+            executor.set(new LivyExecutor(ConsoleFactory.consoleResult.get(), ConsoleFactory.consoleLog.get()))
           }
 
           if (executor.get() != null) {
-            executor.get().console.print("> " + line + "\n", ConsoleViewContentType.NORMAL_OUTPUT)
+            executor.get().consoleResult.print("> " + line + "\n", ConsoleViewContentType.NORMAL_OUTPUT)
             executor.get().execute(line)
           }
         }

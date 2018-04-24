@@ -7,6 +7,8 @@ import scala.concurrent.Future
 
 
 trait LivyRest {
+  def config: String
+
   def newSession(request: CreateSession.Request): Future[Session]
 
   def getSession(sessionId: Int): Future[Session]
@@ -21,5 +23,7 @@ trait LivyRest {
 
   def runStatement(sessionId: Int, request: PostStatements.Request): Future[Statement]
 
-  def getStatements(sessionId: Int): Future[Seq[GetStatements.Response]]
+  def getStatements(sessionId: Int): Future[GetStatements.Response]
+
+  def getStatement(sessionId: Int, statementId: Int): Future[Statement]
 }

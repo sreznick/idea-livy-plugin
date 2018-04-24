@@ -48,7 +48,7 @@ trait LoggingLivyRest extends LivyRest {
     reportFail(() => super.runStatement(sessionId, request))
   }
 
-  abstract override def getStatements(sessionId: Int): Future[Seq[GetStatements.Response]] = {
+  abstract override def getStatements(sessionId: Int): Future[GetStatements.Response] = {
     reportFail(() => super.getStatements(sessionId))
   }
 

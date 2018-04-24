@@ -25,10 +25,12 @@ class ConsoleFactory extends ToolWindowFactory {
     toolWindow.getContentManager.addContent(contentLog)
 
     ConsoleFactory.consoleResult.set(consoleResult)
+    ConsoleFactory.consoleLog.set(consoleLog)
   }
 
 }
 
 object ConsoleFactory {
   val consoleResult = new AtomicReference[ConsoleView](null)
+  val consoleLog = new AtomicReference[ConsoleView]()
 }
