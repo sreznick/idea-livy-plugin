@@ -54,7 +54,7 @@ object ServerData {
     }
 
     object GetStatements {
-      case class Response(total_statements: Int, statements: Seq[Statement])
+      case class Response(totalStatements: Int, statements: Seq[Statement])
     }
   }
 
@@ -83,6 +83,41 @@ object ServerData {
 
     implicit val decodeStatement: Decoder[Statement] =
       Decoder.forProduct5("id", "code", "state", "output", "progress")(Statement.apply)
+
+    implicit val decodeSessionState: Decoder[SessionState] =
+      Decoder.forProduct2("id", "state")(SessionState.apply)
+
+    implicit val decodeSession: Decoder[Session] =
+      Decoder.forProduct8("id", "appId", "owner", "proxyUser", "kind", "log", "state", "appInfo")(Session.apply)
+
+    implicit val decodeGetStatements: Decoder[CreateSession.GetStatements.Response] =
+      Decoder.forProduct2("total_statements", "statements")(CreateSession.GetStatements.Response.apply)
+
+    implicit val decodeGetSessionLog: Decoder[CreateSession.GetSessionLog.Response] =
+      Decoder.forProduct4("id", "from", "total", "log")(CreateSession.GetSessionLog.Response.apply)
+
+    implicit val decodeGetSessions: Decoder[GetSessions.Response] =
+      Decoder.forProduct3("from", "total", "sessions")(GetSessions.Response.apply)
+  }
+
+  object Encoders {
+    implicit val encodeSessionLog: Encoder[CreateSession.GetSessionLog.Request] =
+      Encoder.forProduct2("from", "size")(u => (u.from, u.size))
+
+    implicit val encodePostStatements: Encoder[CreateSession.PostStatements.Request] =
+      Encoder.forProduct2("code", "kind")(u => (u.code, u.kind))
+
+    implicit val encodeGetSessions: Encoder[GetSessions.Request] =
+      Encoder.forProduct2("from", "size")(u => (u.from, u.size))
+
+    implicit val encodeCreateSession: Encoder[CreateSession.Request] =
+      Encoder.forProduct15(
+          "kind", "proxyUser", "jars", "pyFiles", "files",
+          "driverMemory", "driverCores", "executorMemory", "executorCores",
+          "numExecutors", "archives", "queue", "name", "conf", "hearbeatTimeoutInSecond")(u =>
+           (u.kind, u.proxyUser, u.jars, u.pyFiles, u.files,
+            u.driverMemory, u.driverCores, u.executorMemory, u.executorCores,
+            u.numExecutors, u.archives, u.queue, u.name, u.conf, u.hearbeatTimeoutInSecond))
   }
 
   case class StatementOutput(status: String, executionCount: Int, data: OutputContents)

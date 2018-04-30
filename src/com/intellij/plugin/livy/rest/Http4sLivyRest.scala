@@ -14,6 +14,9 @@ import org.http4s.dsl.io._
 
 import scala.concurrent.Future
 
+import com.intellij.plugin.livy.ServerData.Decoders._
+import com.intellij.plugin.livy.ServerData.Encoders._
+
 
 case class Q(kind: SessionKind.Value)
 case class S(id: Int, state: String)
