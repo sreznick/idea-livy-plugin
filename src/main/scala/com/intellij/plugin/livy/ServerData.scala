@@ -11,6 +11,15 @@ object ServerData {
     val Sql = Value("sql")
   }
 
+  object StatementState extends Enumeration {
+    val Waiting = Value("waiting")
+    val Running = Value("running")
+    val Available = Value("available")
+    val Error = Value("error")
+    val Cancelling = Value("cancelling")
+    val Cancelled = Value("cancelled")
+  }
+
   object GetSessions {
     case class Request(from: Option[Int] = None, size: Option[Int] = None)
     case class Response(from: Int, total: Int, sessions: Seq[Session])
