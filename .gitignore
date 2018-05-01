@@ -7,3 +7,4 @@ project/plugins/project/
 *.log
 .idea
 out/
+idea/
