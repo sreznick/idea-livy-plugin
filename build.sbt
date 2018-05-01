@@ -7,5 +7,6 @@ lazy val root = (project in file("."))
     version      := "0.1.0-SNAPSHOT",
     scalaVersion := "2.12.5",
     ideaBuild    := "181.4203.550",
-    libraryDependencies ++= mainDependencies
+    libraryDependencies ++= mainDependencies,
+    unmanagedJars in Compile += file(System.getProperty("java.home")).getParentFile / "lib" / "tools.jar"
   )

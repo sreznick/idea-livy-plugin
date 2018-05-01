@@ -1,10 +1,6 @@
-dist/*
 target/
-project/boot/
-project/plugins/project/
-.cache
-.lib/
 *.log
-.idea
+.idea/
 out/
+!/.idea/runConfigurations/
 idea/
