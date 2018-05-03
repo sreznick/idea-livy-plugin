@@ -1,7 +1,7 @@
 package com.intellij.plugin.livy
 
-import io.circe.{Decoder, HCursor}
-import io.circe._, io.circe.generic.semiauto._
+import com.intellij.plugin.livy.ServerData.CreateBatch.{BatchLog, BatchState}
+import io.circe.{Decoder, _}
 
 object ServerData {
   object SessionKind extends Enumeration {
@@ -107,6 +107,12 @@ object ServerData {
 
     implicit val decodeGetSessions: Decoder[GetSessions.Response] =
       Decoder.forProduct3("from", "total", "sessions")(GetSessions.Response.apply)
+
+    implicit val decodeBatchState: Decoder[BatchState] =
+      Decoder.forProduct2("id", "state")(BatchState.apply)
+
+    implicit val decodeGetBatchLog: Decoder[BatchLog.Response] =
+      Decoder.forProduct4("id", "from", "total", "log")(BatchLog.Response.apply)
   }
 
   object Encoders {
@@ -127,7 +133,48 @@ object ServerData {
            (u.kind, u.proxyUser, u.jars, u.pyFiles, u.files,
             u.driverMemory, u.driverCores, u.executorMemory, u.executorCores,
             u.numExecutors, u.archives, u.queue, u.name, u.conf, u.hearbeatTimeoutInSecond))
+
+    implicit val encodeCreateBatch: Encoder[CreateBatch.Request] =
+      Encoder.forProduct16(
+        "file", "proxyUser", "className", "args", "jars", "pyFiles", "files",
+        "driverMemory", "driverCores", "executorMemory", "executorCores",
+        "numExecutors", "archives", "queue", "name", "conf")(u =>
+        (u.file, u.proxyUser, u.className, u.className, u.jars, u.pyFiles, u.files,
+          u.driverMemory, u.driverCores, u.executorMemory, u.executorCores,
+          u.numExecutors, u.archives, u.queue, u.name, u.conf))
+
+    implicit val encodeBatchLog: Encoder[BatchLog.Request] =
+      Encoder.forProduct2("from", "size")(u => (u.from, u.size))
   }
 
   case class StatementOutput(status: String, executionCount: Int, data: OutputContents)
+
+  case class Batch(id: Int, appId: String, appInfo: Map[String, String], log: Seq[String], state: String)
+
+  object CreateBatch {
+    case class Request(file: String,
+                  proxyUser: Option[String] = None,
+                  className: Option[String] = None,
+                  args: Option[Seq[String]] = None,
+                  jars: Option[Seq[String]] = None,
+                  pyFiles: Option[Seq[String]] = None,
+                  files: Option[Seq[String]] = None,
+                  driverMemory: Option[String] = None,
+                  driverCores: Option[Int] = None,
+                  executorMemory: Option[String] = None,
+                  executorCores: Option[Int] = None,
+                  numExecutors: Option[Int] = None,
+                  archives: Option[Seq[String]] = None,
+                  queue: Option[String] = None,
+                  name: Option[String] = None,
+                  conf: Option[Map[String, String]] = None
+                 )
+
+    case class BatchState(id: Int, state: String)
+
+    object BatchLog {
+      case class Request(from: Int, size: Int)
+      case class Response(id: Int, from: Int, size: Int, log: Seq[String])
+    }
+  }
 }
