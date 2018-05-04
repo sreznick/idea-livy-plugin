@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
 import com.intellij.plugin.livy.ServerData.CreateSession.{GetSessionLog, GetStatements, PostStatements}
-import com.intellij.plugin.livy.ServerData.Session
+import com.intellij.plugin.livy.ServerData.{Session, StatementOutput, StatementOutputStatus, StatementState}
 import com.intellij.plugin.livy.rest.{DefaultLivyRest, LivyRest}
 import org.eclipse.aether.SessionData
 
@@ -32,8 +32,8 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
     consoleView.print(s + "\n", ConsoleViewContentType.NORMAL_OUTPUT)
   }
 
-  private def reportError(s: String, consoleView: ConsoleView = consoleResult) = {
-    consoleView.print(s + "\n", ConsoleViewContentType.ERROR_OUTPUT)
+  private def reportError(s: String, consoleView: ConsoleView = consoleResult, sep: String = "\n") = {
+    consoleView.print(s + sep, ConsoleViewContentType.ERROR_OUTPUT)
   }
 
   def execute(command: String): Future[Unit] = {
@@ -69,7 +69,7 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
                   updateSession(session)
                 })
               case None =>
-                reportError("Server is node defined")
+                reportError("Server is not defined")
             }
 
           case "select" =>
@@ -80,7 +80,7 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
                   updateSession(session)
                 })
               case None =>
-                reportError("Server is node defined")
+                reportError("Server is not defined")
             }
 
           case "result" =>
@@ -95,7 +95,8 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
                     report(s"output state: ${out.status}")
                     report(s"output execution count: ${out.executionCount}")
                     report("---")
-                    report(out.data.plain)
+                    report("output: " + out.data.map(_.plain).getOrElse(""))
+                    report("traceback: " + out.traceback.map(_.mkString("")).getOrElse(""))
                   }
                 })
               case None =>
@@ -144,9 +145,22 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
                     Thread.sleep(2000)
                     server.getStatement(session.id, stat.id).andThen {
                       case Success(result) =>
-                        report(s"STATE: ${result.state}")
                         for (out <- result.output) {
-                          report(out.data.plain)
+                          StatementOutputStatus.withName(out.status) match {
+                            case StatementOutputStatus.Ok =>
+                              report(s"${session.id}/${stat.id} done")
+                              report(out.data.map(_.plain).getOrElse(""))
+                            case StatementOutputStatus.Error =>
+                              reportError(s"${session.id}/${stat.id} failed")
+                              reportError("Error name:" + out.ename.getOrElse(""))
+                              reportError("Error value:" + out.evalue.getOrElse(""))
+                              out.traceback.getOrElse(Seq()).foreach {
+                                case line =>
+                                  reportError(line, sep = "")
+                              }
+                            case state =>
+                              reportError(s"Unexpected state: $state")
+                          }
                         }
                       case Failure(e) =>
                         reportError(s"failed: $e")

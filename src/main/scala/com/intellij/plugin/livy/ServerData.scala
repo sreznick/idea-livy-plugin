@@ -20,6 +20,11 @@ object ServerData {
     val Cancelled = Value("cancelled")
   }
 
+  object StatementOutputStatus extends Enumeration {
+    val Ok = Value("ok")
+    val Error = Value("error")
+  }
+
   object GetSessions {
     case class Request(from: Option[Int] = None, size: Option[Int] = None)
     case class Response(from: Int, total: Int, sessions: Seq[Session])
@@ -79,7 +84,11 @@ object ServerData {
 
   case class SessionState(id: Int, state: String)
 
-  case class Statement(id: Int, code: String, state: String, output: Option[StatementOutput], progress: Float)
+  case class Statement(id: Int,
+                       code: String,
+                       state: String,
+                       output: Option[StatementOutput],
+                       progress: Float)
 
   case class OutputContents(plain: String)
 
@@ -88,7 +97,7 @@ object ServerData {
       Decoder.forProduct1("text/plain")(OutputContents.apply)
 
     implicit val decodeStatementOutput: Decoder[StatementOutput] =
-      Decoder.forProduct3("status", "execution_count", "data")(StatementOutput.apply)
+      Decoder.forProduct6("status", "execution_count", "data", "ename", "evalue", "traceback")(StatementOutput.apply)
 
     implicit val decodeStatement: Decoder[Statement] =
       Decoder.forProduct5("id", "code", "state", "output", "progress")(Statement.apply)
@@ -147,7 +156,13 @@ object ServerData {
       Encoder.forProduct2("from", "size")(u => (u.from, u.size))
   }
 
-  case class StatementOutput(status: String, executionCount: Int, data: OutputContents)
+  case class StatementOutput(status: String,
+                             executionCount: Int,
+                             data: Option[OutputContents],
+                             ename: Option[String],
+                             evalue: Option[String],
+                             traceback: Option[Seq[String]]
+                            )
 
   case class Batch(id: Int, appId: String, appInfo: Map[String, String], log: Seq[String], state: String)
 
