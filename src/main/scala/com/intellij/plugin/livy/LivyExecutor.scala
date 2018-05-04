@@ -3,30 +3,48 @@ package com.intellij.plugin.livy
 import java.util.concurrent.atomic.AtomicReference
 
 import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
-import com.intellij.plugin.livy.ServerData.CreateSession.{GetSessionLog, GetStatements, PostStatements}
-import com.intellij.plugin.livy.ServerData.{Session, StatementOutput, StatementOutputStatus, StatementState}
+import com.intellij.plugin.livy.ServerData.StatementOutputStatus
 import com.intellij.plugin.livy.rest.{DefaultLivyRest, LivyRest}
-import org.eclipse.aether.SessionData
+import com.intellij.plugin.livy.session.{RestSessionManager, Session, SessionManager}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) {
-  val server = new AtomicReference[Option[LivyRest]](None)
+class LivyExecutor(val consoleResult: ConsoleView,
+                   val consoleLog: ConsoleView) {
   val session = new AtomicReference[Option[Session]](None)
+  val sessionManager = new AtomicReference[Option[SessionManager]]()
 
-  private def updateServer(livyRest: LivyRest): Unit = {
-    server.set(Some(livyRest))
+  private def updateServer(livyRest: LivyRest, url: String): Unit = {
+    sessionManager.set(Some(new RestSessionManager(new DefaultLivyRest(url))))
   }
-
-  private def currentServer: Option[LivyRest] = server.get()
 
   private def updateSession(session: Session): Unit = {
     this.session.set(Some(session))
   }
 
+  private def currentSessionManager: Option[SessionManager] = sessionManager.get()
   private def currentSession = session.get()
+
+  private def withSessionManager(f : SessionManager => Unit): Unit = {
+    currentSessionManager match {
+      case Some(sm) =>
+        f(sm)
+      case None =>
+        reportError("Server is not defined")
+    }
+  }
+
+  private def withSession(f : Session => Unit): Unit = {
+    currentSession match {
+      case Some(session) =>
+        f(session)
+      case None =>
+        reportError("Session is not defined")
+    }
+  }
+
 
   private def report(s: String, consoleView: ConsoleView = consoleResult) = {
     consoleView.print(s + "\n", ConsoleViewContentType.NORMAL_OUTPUT)
@@ -44,17 +62,18 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
 
         args(0) match {
           case "status" =>
-            val serverInfo = currentServer.map(_.config).getOrElse("Not Defined")
-            report(s"server: $serverInfo")
             val sessionInfo = currentSession.map(_.id.toString).getOrElse("Not Defined")
             report(s"session: $sessionInfo")
 
           case "server" =>
             val restServer = new DefaultLivyRest(args(1))
             restServer.getSessions(ServerData.GetSessions.Request())
-              .map(sessions => {
-                report("sessions: " + sessions)
-                updateServer(restServer)
+              .map(result => {
+                result.sessions.foreach {
+                  case session =>
+                    report(s"session ${session.id}: ${session.state}")
+                }
+                updateServer(restServer, args(1))
               }) recoverWith {
               case e =>
                 reportError(e.toString)
@@ -62,31 +81,26 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
             }
 
           case "open" =>
-            currentServer match {
-              case Some(server) =>
-                server.newSession(ServerData.CreateSession.Request("spark")).map(session => {
-                  report(s"opened $session")
-                  updateSession(session)
-                })
-              case None =>
-                reportError("Server is not defined")
+            withSessionManager {
+              case sm =>
+                sm.startSession() map {
+                  case session =>
+                    report(s"created session ${session.id}")
+                }
             }
 
           case "select" =>
-            currentServer match {
-              case Some(server) =>
-                currentServer.get.getSession(args(1).toInt).map(session => {
-                  report(s"switched to $session")
-                  updateSession(session)
-                })
-              case None =>
-                reportError("Server is not defined")
+            withSessionManager {
+              case sm =>
+                val session = sm.selectSession(args(1).toInt)
+                report(s"switched to session ${session.id}")
+                updateSession(session)
             }
 
           case "result" =>
-            currentServer match {
-              case Some(server) =>
-                currentServer.get.getStatement(args(1).toInt, args(2).toInt).map(stat => {
+            withSessionManager {
+              case sm =>
+                sm.getStatement(args(1).toInt, args(2).toInt).map(stat => {
                   report(s"id: ${stat.id}")
                   report(s"code: ${stat.code}")
                   report(s"state: ${stat.state}")
@@ -99,72 +113,43 @@ class LivyExecutor(val consoleResult: ConsoleView, val consoleLog: ConsoleView) 
                     report("traceback: " + out.traceback.map(_.mkString("")).getOrElse(""))
                   }
                 })
-              case None =>
-                reportError("Server is node defined")
-            }
-
-          case "results" =>
-            currentServer match {
-              case Some(server) =>
-                currentServer.get.getStatements(args(1).toInt).map(stats => {
-                  report(stats.toString)
-                })
-              case None =>
-                reportError("Server is node defined")
             }
         }
       } else {
-        currentServer match {
-          case None =>
-            reportError("Server is not defined")
-          case Some(server) =>
-            currentSession match {
-              case None =>
-                reportError("Session is not defined")
-              case Some(session) =>
-                val cmdF = server.runStatement(session.id, PostStatements.Request(command))
-                cmdF.onComplete {
-                  case Success(result) =>
-                    println("RES: " + result)
-                    report(result.toString)
+        withSession {
+          case session =>
+            val cmdF: Future[ServerData.Statement] = session.runStatement(command)
 
-                    val logF = server.getSessionLog(session.id, GetSessionLog.Request(0, 100000))
-                    logF.onComplete {
-                      case Success(res) =>
-                        println("LOG RES: " + res)
-                        for (s <- res.log) {
-                          report(s, consoleLog)
-                        }
+            cmdF.onComplete {
+              case Success(result) =>
+                // temporary stub
+                session.getLog(0, 100000) map {
+                  case lines =>
+                    lines.foreach {
+                      case line => report(line, consoleLog)
                     }
-
-
                 }
+              case Failure(_) =>
+            }
 
-                cmdF.flatMap {
-                  case stat =>
-                    Thread.sleep(2000)
-                    server.getStatement(session.id, stat.id).andThen {
-                      case Success(result) =>
-                        for (out <- result.output) {
-                          StatementOutputStatus.withName(out.status) match {
-                            case StatementOutputStatus.Ok =>
-                              report(s"${session.id}/${stat.id} done")
-                              report(out.data.map(_.plain).getOrElse(""))
-                            case StatementOutputStatus.Error =>
-                              reportError(s"${session.id}/${stat.id} failed")
-                              reportError("Error name:" + out.ename.getOrElse(""))
-                              reportError("Error value:" + out.evalue.getOrElse(""))
-                              out.traceback.getOrElse(Seq()).foreach {
-                                case line =>
-                                  reportError(line, sep = "")
-                              }
-                            case state =>
-                              reportError(s"Unexpected state: $state")
-                          }
-                        }
-                      case Failure(e) =>
-                        reportError(s"failed: $e")
-                    }
+            cmdF.map {
+              case result =>
+                for (out <- result.output) {
+                  StatementOutputStatus.withName(out.status) match {
+                    case StatementOutputStatus.Ok =>
+                      report(s"${currentSession.get.id}/${result.id} done")
+                      report(out.data.map(_.plain).getOrElse(""))
+                    case StatementOutputStatus.Error =>
+                      reportError(s"${currentSession.get.id}/${result.id} failed")
+                      reportError("Error name:" + out.ename.getOrElse(""))
+                      reportError("Error value:" + out.evalue.getOrElse(""))
+                      out.traceback.getOrElse(Seq()).foreach {
+                        case line =>
+                          reportError(line, sep = "")
+                      }
+                    case state =>
+                      reportError(s"Unexpected state: $state")
+                  }
                 }
             }
         }

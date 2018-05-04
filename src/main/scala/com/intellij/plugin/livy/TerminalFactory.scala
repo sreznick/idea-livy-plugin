@@ -7,12 +7,11 @@ import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindow
+import com.intellij.plugin.livy.session.RestSessionManager
 import javax.swing.JTextArea
 import com.intellij.ui.content.ContentFactory
 
 class TerminalFactory extends ToolWindowFactory {
-  println("FFFFFFFFFFFFFFFFFFFFFFF")
-
   private val terminal = new JTextArea()
 
   def line() = {
