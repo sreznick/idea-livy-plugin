@@ -2,12 +2,11 @@ package com.intellij.plugin.livy.session
 
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
-import com.intellij.plugin.livy.ServerData.CreateSession.GetSessionLog
 import com.intellij.plugin.livy.ServerData.{Statement, StatementState}
 
-import scala.concurrent.{Future, Promise}
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 
 
 class Session(manager: SessionManager, val id: Int) {

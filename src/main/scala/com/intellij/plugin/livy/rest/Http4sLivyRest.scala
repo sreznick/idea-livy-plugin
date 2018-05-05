@@ -77,7 +77,8 @@ abstract class Http4sLivyRest extends LivyRest with Http4sClientDsl[IO]  {
   }
 
   override def getSessionLog(sessionId: Int, request: GetSessionLog.Request): Future[GetSessionLog.Response] = {
-    val httpRequest = GET(serverUri.withPath(s"/sessions/$sessionId/log")).withBody(request.asJson)
+    val path = s"/sessions/$sessionId/log?from=${request.from}&size=${request.size}"
+    val httpRequest = GET(serverUri.withPath(path))
 
     Http1Client[IO]().flatMap { httpClient =>
       httpClient.expect[GetSessionLog.Response](httpRequest)(jsonOf[IO, GetSessionLog.Response])

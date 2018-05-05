@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicReference
 import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
 import com.intellij.plugin.livy.ServerData.StatementOutputStatus
 import com.intellij.plugin.livy.rest.{DefaultLivyRest, LivyRest}
-import com.intellij.plugin.livy.session.{RestSessionManager, Session, SessionManager}
+import com.intellij.plugin.livy.session.{LogManager, RestSessionManager, Session, SessionManager}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -86,6 +86,7 @@ class LivyExecutor(val consoleResult: ConsoleView,
                 sm.startSession() map {
                   case session =>
                     report(s"created session ${session.id}")
+                    new LogManager(sm, session.id, s => report(s, consoleLog))
                 }
             }
 
@@ -95,6 +96,7 @@ class LivyExecutor(val consoleResult: ConsoleView,
                 val session = sm.selectSession(args(1).toInt)
                 report(s"switched to session ${session.id}")
                 updateSession(session)
+                new LogManager(sm, session.id, s => report(s, consoleLog))
             }
 
           case "result" =>
