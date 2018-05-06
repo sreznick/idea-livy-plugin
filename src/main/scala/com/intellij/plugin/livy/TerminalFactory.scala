@@ -3,11 +3,17 @@ package com.intellij.plugin.livy
 import java.awt.event.{KeyEvent, KeyListener}
 import java.util.concurrent.atomic.AtomicReference
 
-import com.intellij.execution.ui.ConsoleViewContentType
+import com.intellij.execution.console.LanguageConsoleImpl
+import com.intellij.execution.console.LanguageConsoleImpl.Helper
+import com.intellij.execution.impl.ConsoleViewImpl
+import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
+import com.intellij.ide.highlighter.JavaFileType
+import com.intellij.lang.Language
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.plugin.livy.session.RestSessionManager
+import com.intellij.testFramework.LightVirtualFile
 import javax.swing.JTextArea
 import com.intellij.ui.content.ContentFactory
 
@@ -45,10 +51,40 @@ class TerminalFactory extends ToolWindowFactory {
 
     })
 
-    val contentFactory = ContentFactory.SERVICE.getInstance
+    val helper = new Helper(project, new LightVirtualFile("QQQ", JavaFileType.INSTANCE, "1234567890"))
 
-    val content = contentFactory.createContent(terminal, "Livy", false)
+    try {
+      val console = new LanguageConsoleImpl(helper)
+      println(console)
+      println(console.isEditable)
+      println(console.isConsoleEditorEnabled)
+      println(console.isEnabled)
+      println(console.isValid)
+      println(console.isVisible)
+      println(console.getVirtualFile.isWritable)
+      println(helper.getDocument.isWritable)
+      println(console.getPromptAttributes)
 
-    toolWindow.getContentManager.addContent(content)
+      console.setEditable(true)
+      console.setPrompt(">")
+      console.setEnabled(true)
+
+      console.validate()
+      println(console)
+      println(terminal)
+
+      val contentFactory = ContentFactory.SERVICE.getInstance
+
+      val content2 = contentFactory.createContent(terminal, "Livy2", false)
+      val content = contentFactory.createContent(console, "Livy", false)
+
+      toolWindow.getContentManager.addContent(content2)
+      toolWindow.getContentManager.addContent(content)
+    } catch {
+      case e =>
+        println("thrown: " + e)
+        e.printStackTrace()
+        throw e
+    }
  }
 }
