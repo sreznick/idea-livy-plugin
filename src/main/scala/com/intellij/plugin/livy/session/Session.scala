@@ -1,6 +1,6 @@
 package com.intellij.plugin.livy.session
 
-import java.io.File
+import java.io.{File, FilenameFilter}
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
 import com.intellij.plugin.livy.ServerData.{Statement, StatementState}
@@ -8,6 +8,7 @@ import com.intellij.plugin.livy.ServerData.{Statement, StatementState}
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+import scala.util.Try
 
 
 class Session(manager: SessionManager, val id: Int) {
@@ -82,5 +83,24 @@ class Session(manager: SessionManager, val id: Int) {
 
   def uploadJar(jarName: String): Future[Unit] = {
     livyClient.uploadJar(new File(jarName)).map(_ => ())
+  }
+
+  def uploadJars(jarNames: Seq[String], onCompleteEach: (Try[Unit], String) => Unit): Future[Unit] = {
+    Future.sequence(jarNames.map(jar => {
+      val uploadF = uploadJar(jar)
+      uploadF.onComplete {
+        case result => onCompleteEach(result, jar)
+      }
+      uploadF
+    })).map(_ => ())
+  }
+
+  def uploadJarsDir(dirPath: String, onCompleteEach: (Try[Unit], String) => Unit): Future[Unit] = {
+    val dirFile = new File(dirPath)
+    val files = dirFile.listFiles(new FilenameFilter {
+      override def accept(dir: File, name: String): Boolean = name.endsWith(".jar")
+    }).toSeq.map(_.getAbsolutePath)
+
+    uploadJars(files, onCompleteEach)
   }
 }

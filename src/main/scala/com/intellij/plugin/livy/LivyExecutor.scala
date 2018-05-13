@@ -10,7 +10,7 @@ import org.apache.livy.LivyClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class LivyExecutor(val consoleResult: ConsoleView,
                    val consoleLog: ConsoleView) {
@@ -88,6 +88,7 @@ class LivyExecutor(val consoleResult: ConsoleView,
                 sm.startSession() map {
                   case session =>
                     report(s"created session ${session.id}")
+                    updateSession(session)
                     new LogManager(sm, session.id, s => report(s, consoleLog))
                 }
             }
@@ -114,6 +115,28 @@ class LivyExecutor(val consoleResult: ConsoleView,
                 }
             }
 
+          case "uploadJarsDir" =>
+            withSession {
+              case session =>
+                val dir = args(1)
+                report(s"Uploading jars from $dir...")
+
+                val onComplteSingle = (status: Try[Unit], name: String) => {
+                  status match {
+                    case Success(_) =>
+                      report("Loaded " + name)
+                    case Failure(e) =>
+                      reportError(s"Failed to load $name: $e`")
+                  }
+                }
+
+                session.uploadJarsDir(dir, onComplteSingle) onComplete {
+                  case Success(_) =>
+                    report(s"uploaded from $dir")
+                  case Failure(e) =>
+                    reportError("fail: " + e)
+                }
+            }
 
           case "result" =>
             withSessionManager {
