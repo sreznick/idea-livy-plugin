@@ -1,5 +1,6 @@
 package com.intellij.plugin.livy.session
 
+import java.io.File
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
 import com.intellij.plugin.livy.ServerData.{Statement, StatementState}
@@ -11,6 +12,8 @@ import scala.concurrent.{Future, Promise}
 
 class Session(manager: SessionManager, val id: Int) {
   private val statementPromices = new ConcurrentHashMap[Int, Promise[Statement]]()
+
+  private val livyClient = manager.livyClient(id)
 
   private def registerWait(statement: Statement): Future[Statement] = {
     val p = Promise[Statement]()
@@ -44,7 +47,10 @@ class Session(manager: SessionManager, val id: Int) {
 
   private val worker = new ScheduledThreadPoolExecutor(1)
 
-  worker.scheduleWithFixedDelay(() => checkStatements, 100, 100, TimeUnit.MILLISECONDS)
+  worker.scheduleWithFixedDelay(
+    new Runnable {
+      def run() = checkStatements
+    }, 100, 100, TimeUnit.MILLISECONDS)
 
   def runStatement(code: String): Future[Statement] = {
     val statementF = manager.invokeStatement(id, code)
@@ -72,5 +78,9 @@ class Session(manager: SessionManager, val id: Int) {
   // temporary shortcut
   def getLog(from: Int, size: Int): Future[Seq[String]] = {
     manager.getSessionLog(id, from, size).map(_.log)
+  }
+
+  def uploadJar(jarName: String): Future[Unit] = {
+    livyClient.uploadJar(new File(jarName)).map(_ => ())
   }
 }

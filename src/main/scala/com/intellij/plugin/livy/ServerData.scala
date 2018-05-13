@@ -79,16 +79,16 @@ object ServerData {
                      kind: String,
                      log: Seq[String],
                      state: String,
-                      appInfo: Map[String, Option[String]]
+                      appInfo: Option[Map[String, Option[String]]]
                     )
 
   case class SessionState(id: Int, state: String)
 
   case class Statement(id: Int,
-                       code: String,
+                       code: Option[String],
                        state: String,
                        output: Option[StatementOutput],
-                       progress: Float)
+                       progress: Option[Float])
 
   case class OutputContents(plain: String)
 

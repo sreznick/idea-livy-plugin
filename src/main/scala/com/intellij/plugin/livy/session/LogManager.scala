@@ -13,7 +13,9 @@ class LogManager(sessionManager: SessionManager, id: Integer, lineProcessor: Str
 
   lastLine.set(0)
 
-  val action: Runnable = () => checkLog()
+  val action: Runnable = new Runnable {
+    def run() = checkLog()
+  }
 
   private def schedule(after: Int) = worker.schedule(action, after, TimeUnit.MILLISECONDS)
 

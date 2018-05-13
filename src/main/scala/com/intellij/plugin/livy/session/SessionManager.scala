@@ -2,10 +2,13 @@ package com.intellij.plugin.livy.session
 
 import com.intellij.plugin.livy.ServerData.CreateSession.GetSessionLog
 import com.intellij.plugin.livy.ServerData.Statement
+import org.apache.livy.LivyClient
+import org.apache.livy.scalaapi.LivyScalaClient
 
 import scala.concurrent.Future
 
 trait SessionManager {
+  def livyClient(sessionId: Int): LivyScalaClient
   def startSession(): Future[Session]
   def selectSession(id: Int): Session = new Session(this, id)
   def invokeStatement(sessionId: Int, code: String): Future[Statement]

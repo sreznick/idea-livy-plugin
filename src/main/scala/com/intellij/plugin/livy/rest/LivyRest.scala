@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 
 trait LivyRest {
-  def config: String
+  def baseUri: String
 
   def newSession(request: CreateSession.Request): Future[Session]
 

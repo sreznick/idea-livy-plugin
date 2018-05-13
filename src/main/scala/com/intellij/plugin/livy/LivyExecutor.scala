@@ -6,6 +6,7 @@ import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
 import com.intellij.plugin.livy.ServerData.StatementOutputStatus
 import com.intellij.plugin.livy.rest.{DefaultLivyRest, LivyRest}
 import com.intellij.plugin.livy.session.{LogManager, RestSessionManager, Session, SessionManager}
+import org.apache.livy.LivyClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -16,7 +17,7 @@ class LivyExecutor(val consoleResult: ConsoleView,
   val session = new AtomicReference[Option[Session]](None)
   val sessionManager = new AtomicReference[Option[SessionManager]]()
 
-  private def updateServer(livyRest: LivyRest, url: String): Unit = {
+  private def updateServer(url: String): Unit = {
     sessionManager.set(Some(new RestSessionManager(new DefaultLivyRest(url))))
   }
 
@@ -69,11 +70,12 @@ class LivyExecutor(val consoleResult: ConsoleView,
             val restServer = new DefaultLivyRest(args(1))
             restServer.getSessions(ServerData.GetSessions.Request())
               .map(result => {
+                report("server is ready")
                 result.sessions.foreach {
                   case session =>
                     report(s"session ${session.id}: ${session.state}")
                 }
-                updateServer(restServer, args(1))
+                updateServer(args(1))
               }) recoverWith {
               case e =>
                 reportError(e.toString)
@@ -98,6 +100,20 @@ class LivyExecutor(val consoleResult: ConsoleView,
                 updateSession(session)
                 new LogManager(sm, session.id, s => report(s, consoleLog))
             }
+
+          case "uploadJar" =>
+            withSession {
+              case session =>
+                val jarName = args(1)
+                report(s"Uploading $jarName...")
+                session.uploadJar(jarName) onComplete {
+                  case Success(_) =>
+                    report(s"uploaded $jarName")
+                  case Failure(e) =>
+                    reportError("fail: " + e)
+                }
+            }
+
 
           case "result" =>
             withSessionManager {

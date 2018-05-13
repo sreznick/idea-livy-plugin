@@ -1,3 +1,4 @@
+import sbt.Keys.libraryDependencies
 import sbt._
 
 object Dependencies {
@@ -17,5 +18,11 @@ object Dependencies {
     "io.circe" %% "circe-generic-extras" % circeVersion
   )
 
-  val mainDependencies: Seq[ModuleID] = http4sGroup ++ circeGroup :+ scalaTest
+  val livyVersion = "0.5.0-incubating"
+  val livyGroup = Seq(
+    "org.apache.livy" % "livy-client-http" % livyVersion,
+    "org.apache.livy" %% "livy-scala-api" % livyVersion
+  )
+
+  val mainDependencies: Seq[ModuleID] = http4sGroup ++ circeGroup ++ livyGroup :+ scalaTest
 }

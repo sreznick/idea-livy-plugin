@@ -31,7 +31,7 @@ abstract class Http4sLivyRest extends LivyRest with Http4sClientDsl[IO]  {
       v
   }
 
-  override def config = serverUri.toString
+  override def baseUri = serverUri.toString
 
   def newSession(request: CreateSession.Request): Future[Session] = {
     val httpRequest = POST(serverUri.withPath("/sessions"),
