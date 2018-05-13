@@ -1,11 +1,13 @@
 package com.intellij.plugin.livy
 
+import java.io.File
 import java.util.concurrent.atomic.AtomicReference
 
 import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
 import com.intellij.plugin.livy.ServerData.StatementOutputStatus
 import com.intellij.plugin.livy.rest.{DefaultLivyRest, LivyRest}
 import com.intellij.plugin.livy.session.{LogManager, RestSessionManager, Session, SessionManager}
+import org.apache.commons.io.IOUtils
 import org.apache.livy.LivyClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -138,6 +140,37 @@ class LivyExecutor(val consoleResult: ConsoleView,
                 }
             }
 
+          case "runJob" =>
+            withSession {
+              case session =>
+                val jarName = args(1)
+                val className = args(2)
+                report(s"Uploading $jarName...")
+                val uploadF = session.uploadJar(jarName)
+                uploadF onComplete {
+                  case Success(_) =>
+                    report(s"uploaded $jarName")
+                    try {
+                      val p = new ProcessBuilder()
+                        .directory(new File(LivyExecutor.SubmitHome))
+                        .command(LivyExecutor.Sbt, s"runMain com.intellij.LivySubmit http://localhost:8998/sessions/${session.id} $className").start()
+                      println("Running: ")
+                      p.waitFor()
+                      println("DONE: " + p.exitValue())
+
+                      println("STDOUT:")
+                      IOUtils.copy(p.getInputStream, System.out)
+                      println("STDERR:")
+                      IOUtils.copy(p.getErrorStream, System.out)
+                    } catch {
+                      case e =>
+                        println("THROWN " + e)
+                    }
+                  case Failure(e) =>
+                    reportError("fail: " + e)
+                }
+            }
+
           case "result" =>
             withSessionManager {
               case sm =>
@@ -198,4 +231,9 @@ class LivyExecutor(val consoleResult: ConsoleView,
     }
     Future.successful()
   }
+}
+
+object LivyExecutor {
+  val SubmitHome = "C:\\work\\livy\\idea_plugin\\2\\idea-livy-plugin\\livy-submit"
+  val Sbt = "c:\\\\opt\\\\sbt\\\\bin\\\\sbt.bat"
 }

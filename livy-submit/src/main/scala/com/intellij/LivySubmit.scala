@@ -20,11 +20,7 @@ object LivySubmit {
   }
 
   def main(args: Array[String]): Unit = {
-    println("1111111111111111")
-
     require(args.length >= 2)
-
-    println("22222222222222222")
 
     val url = args(0)
 
@@ -32,9 +28,7 @@ object LivySubmit {
 
     var client: LivyScalaClient = null
     try {
-        println("33333333333333")
         client = initClient(url)
-        println("client: " + client)
 
         uploadClasses(client, Seq(this.getClass(), client.getClass)).flatMap {
             case _ =>
