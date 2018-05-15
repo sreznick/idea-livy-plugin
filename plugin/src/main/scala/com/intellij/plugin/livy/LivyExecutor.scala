@@ -14,6 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
+
 class LivyExecutor(val consoleResult: ConsoleView,
                    val consoleLog: ConsoleView) {
   val session = new AtomicReference[Option[Session]](None)
