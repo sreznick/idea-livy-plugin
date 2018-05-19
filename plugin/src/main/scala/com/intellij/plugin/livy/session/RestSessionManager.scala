@@ -4,9 +4,9 @@ import java.net.URI
 import java.util
 import java.util.concurrent._
 
-import com.intellij.plugin.livy.ServerData
-import com.intellij.plugin.livy.ServerData.CreateSession.GetSessionLog
-import com.intellij.plugin.livy.ServerData.Statement
+import com.intellij.plugin.livy.data.ServerData.CreateSession.GetSessionLog
+import com.intellij.plugin.livy.data.ServerData.Statement
+import com.intellij.plugin.livy.data.ServerData
 import com.intellij.plugin.livy.rest.LivyRest
 import org.apache.livy.{LivyClient, LivyClientBuilder}
 
@@ -49,6 +49,10 @@ class RestSessionManager(rest: LivyRest) extends SessionManager {
             waitState("idle", session.id)
         }
     }
+  }
+
+  override def stopSession(sessionId: Int): Future[Unit] = {
+    rest.deleteSession(sessionId).map(_ => ())
   }
 
   override def selectSession(id: Int): Session = {

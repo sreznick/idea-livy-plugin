@@ -4,7 +4,8 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicReference
 
 import com.intellij.execution.ui.{ConsoleView, ConsoleViewContentType}
-import com.intellij.plugin.livy.ServerData.StatementOutputStatus
+import com.intellij.plugin.livy.data.ServerData
+import com.intellij.plugin.livy.data.ServerData.StatementOutputStatus
 import com.intellij.plugin.livy.rest.{DefaultLivyRest, LivyRest}
 import com.intellij.plugin.livy.session.{LogManager, RestSessionManager, Session, SessionManager}
 import org.apache.commons.io.IOUtils

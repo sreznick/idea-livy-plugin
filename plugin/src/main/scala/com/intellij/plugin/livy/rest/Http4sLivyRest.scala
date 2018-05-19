@@ -1,8 +1,8 @@
 package com.intellij.plugin.livy.rest
 
 import cats.effect._
-import com.intellij.plugin.livy.ServerData.CreateSession.{GetSessionLog, GetStatements, PostStatements}
-import com.intellij.plugin.livy.ServerData._
+import com.intellij.plugin.livy.data.ServerData.CreateSession.{GetSessionLog, GetStatements, PostStatements}
+import com.intellij.plugin.livy.data.ServerData._
 import io.circe.Printer
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -14,8 +14,8 @@ import org.http4s.dsl.io._
 
 import scala.concurrent.Future
 
-import com.intellij.plugin.livy.ServerData.Decoders._
-import com.intellij.plugin.livy.ServerData.Encoders._
+import com.intellij.plugin.livy.data.ServerData.Decoders._
+import com.intellij.plugin.livy.data.ServerData.Encoders._
 
 
 case class Q(kind: SessionKind.Value)
@@ -68,11 +68,13 @@ abstract class Http4sLivyRest extends LivyRest with Http4sClientDsl[IO]  {
     } unsafeToFuture()
   }
 
-  override def deleteSession(sessionId: Int): Future[Unit] = {
+  override def deleteSession(sessionId: Int): Future[DeleteResponse] = {
     val httpRequest = DELETE(serverUri.withPath(s"/sessions/$sessionId"))
 
+    import Decoders._
+
     Http1Client[IO]().flatMap { httpClient =>
-      httpClient.expect[Unit](httpRequest)
+      httpClient.expect[DeleteResponse](httpRequest)(jsonOf[IO, DeleteResponse])
     } unsafeToFuture()
   }
 

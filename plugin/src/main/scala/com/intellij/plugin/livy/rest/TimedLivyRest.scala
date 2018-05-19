@@ -1,7 +1,7 @@
 package com.intellij.plugin.livy.rest
 
-import com.intellij.plugin.livy.ServerData.CreateSession.{GetSessionLog, GetStatements, PostStatements}
-import com.intellij.plugin.livy.ServerData._
+import com.intellij.plugin.livy.data.ServerData.CreateSession.{GetSessionLog, GetStatements, PostStatements}
+import com.intellij.plugin.livy.data.ServerData._
 
 import scala.concurrent.Future
 import scala.util.Failure
@@ -40,7 +40,7 @@ trait TimedLivyRest extends LivyRest {
     measure(() => super.getSessionState(sessionId))
   }
 
-  abstract override def deleteSession(sessionId: Int): Future[Unit] = {
+  abstract override def deleteSession(sessionId: Int): Future[DeleteResponse] = {
     measure(() => super.deleteSession(sessionId))
   }
 

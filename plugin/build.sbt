@@ -8,6 +8,5 @@ lazy val root = (project in file("."))
     scalaVersion := "2.11.8",
     ideaBuild    := "181.4203.550",
     libraryDependencies ++= mainDependencies,
-    unmanagedJars in Compile += file(System.getProperty("java.home")).getParentFile / "lib" / "tools.jar",
-    ideaExternalPlugins += IdeaPlugin.Id("Scala", "org.intellij.scala", None)
+    unmanagedJars in Compile += file(System.getProperty("java.home")).getParentFile / "lib" / "tools.jar"
   )

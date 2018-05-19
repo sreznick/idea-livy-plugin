@@ -1,7 +1,7 @@
-package com.intellij.plugin.livy
+package com.intellij.plugin.livy.data
 
-import com.intellij.plugin.livy.ServerData.CreateBatch.{BatchLog, BatchState}
-import io.circe.{Decoder, _}
+import com.intellij.plugin.livy.data.ServerData.CreateBatch.{BatchLog, BatchState}
+import io.circe._
 
 object ServerData {
   object SessionKind extends Enumeration {
@@ -79,10 +79,12 @@ object ServerData {
                      kind: String,
                      log: Seq[String],
                      state: String,
-                      appInfo: Option[Map[String, Option[String]]]
+                     appInfo: Option[Map[String, Option[String]]]
                     )
 
   case class SessionState(id: Int, state: String)
+
+  case class DeleteResponse(msg: String)
 
   case class Statement(id: Int,
                        code: Option[String],
@@ -93,6 +95,9 @@ object ServerData {
   case class OutputContents(plain: String)
 
   object Decoders {
+    implicit val decodeDeleteResponse: Decoder[DeleteResponse] =
+      Decoder.forProduct1("msg")(DeleteResponse.apply)
+
     implicit val decodeOutputContents: Decoder[OutputContents] =
       Decoder.forProduct1("text/plain")(OutputContents.apply)
 

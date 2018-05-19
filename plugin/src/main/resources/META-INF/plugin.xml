@@ -23,6 +23,7 @@
                 factoryClass="com.intellij.plugin.livy.TerminalFactory"/>
     <toolWindow id="LivyConsole" secondary="true" anchor="bottom"
                 factoryClass="com.intellij.plugin.livy.ConsoleFactory"/>
+    <configurationType implementation="com.intellij.plugin.livy.runcfg.LivyRunConfigurationType"/>
   </extensions>
 
   <actions>

@@ -3,7 +3,7 @@ package com.intellij.plugin.livy.session
 import java.io.{File, FilenameFilter}
 import java.util.concurrent.{ConcurrentHashMap, ScheduledThreadPoolExecutor, TimeUnit}
 
-import com.intellij.plugin.livy.ServerData.{Statement, StatementState}
+import com.intellij.plugin.livy.data.ServerData.{Statement, StatementState}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -102,5 +102,9 @@ class Session(manager: SessionManager, val id: Int) {
     }).toSeq.map(_.getAbsolutePath)
 
     uploadJars(files, onCompleteEach)
+  }
+
+  def close() = {
+    manager.stopSession(id)
   }
 }
