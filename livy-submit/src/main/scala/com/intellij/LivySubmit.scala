@@ -3,6 +3,7 @@ package com.intellij
 import java.net.URI
 import java.io.FileNotFoundException
 import java.io.File
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.apache.livy.LivyClientBuilder
@@ -11,8 +12,8 @@ import org.apache.livy.scalaapi.ScalaJobContext
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success}
 
 object LivySubmit {
   def initClient(url: String): LivyScalaClient = {
@@ -33,7 +34,7 @@ object LivySubmit {
         uploadClasses(client, Seq(this.getClass(), client.getClass)).flatMap {
             case _ =>
                 val className = args(1) 
-                println("Submitting $className...")
+                println(s"Submitting $className...")
                 client.submit(ctx => {
                     val clazz = Class.forName(className)
 
@@ -41,12 +42,33 @@ object LivySubmit {
                         case method => method.getName == "main"
                     }
 
-                    mainMethod.get.invoke(null, ctx)
+                    try {
+                      mainMethod.get.invoke(null, ctx)
+                    } catch {
+                      case e: Throwable =>
+                        Failure(e)
+                    }
                 })
         } onComplete {
-            case res =>
-                println("RESULT: " + res)
-                finishFlag.set(true)
+            case Success(res) =>
+              res match {
+                case Failure(e) =>
+                  e match {
+                    case ite:InvocationTargetException =>
+                      println("InvocationTargerException")
+                      println("cause: " + ite.getCause)
+                      for (ste <- ite.getCause.getStackTrace) {
+                        println(ste)
+                      }
+                    case _ =>
+                      println("other...")
+                  }
+                case res =>
+                  println("RESULT: " + res)
+              }
+              finishFlag.set(true)
+            case Failure(e) =>
+              println(s"Unprocessed fail with $e")
         }
 
         while (!finishFlag.get()) {

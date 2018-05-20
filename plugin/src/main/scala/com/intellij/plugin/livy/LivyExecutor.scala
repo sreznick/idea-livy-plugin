@@ -236,6 +236,6 @@ class LivyExecutor(val consoleResult: ConsoleView,
 }
 
 object LivyExecutor {
-  val SubmitHome = "C:\\work\\livy\\idea_plugin\\2\\idea-livy-plugin\\livy-submit"
+  val SubmitHome = "C:\\work\\livy\\idea_plugin\\7\\idea-livy-plugin\\livy-submit"
   val Sbt = "c:\\\\opt\\\\sbt\\\\bin\\\\sbt.bat"
 }
