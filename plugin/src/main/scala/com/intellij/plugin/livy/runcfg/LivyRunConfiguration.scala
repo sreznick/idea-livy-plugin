@@ -13,6 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.plugin.livy.LivyExecutor
 import com.intellij.plugin.livy.data.ServerData.GetSessions
 import com.intellij.plugin.livy.io.IOUtils
+import com.intellij.plugin.livy.jar.JarUtils
 import com.intellij.plugin.livy.rest.DefaultLivyRest
 import com.intellij.plugin.livy.session.{RestSessionManager, Session}
 
@@ -56,6 +57,10 @@ class LivyRunConfiguration (val project: Project,
     val jarName = findJarToRun().map(_.getCanonicalPath)
 
     stdOutput(s"Starting $jarName")
+
+    val submittableClass = JarUtils.submittableClasses(jarName.get).head
+
+    stdOutput(s"Classname: $submittableClass")
 
     val sessionsF = livyRest.getSessions(GetSessions.Request())
 
@@ -101,7 +106,7 @@ class LivyRunConfiguration (val project: Project,
           pb.environment().put("JAVA_HOME", submitterJava)
           val p = pb
             .directory(new File(submitterHome))
-            .command(submitterCmd, submitterParam(currentSession.id))
+            .command(submitterCmd, submitterParam(currentSession.id, submittableClass))
             .start()
 
           def processStreamAsync(is: InputStream, action: String => Unit) = Future {
@@ -175,5 +180,6 @@ object LivyRunConfiguration {
   val submitterJava = "c:\\Java\\jdk1.8.0_161"
   val submitterHome = LivyExecutor.SubmitHome
   val submitterCmd = LivyExecutor.Sbt
-  def submitterParam(sessionId: Int) = s"runMain com.intellij.LivySubmit http://localhost:8998/sessions/${sessionId} $ClassName"
+  def submitterParam(sessionId: Int, className: String) =
+    s"runMain com.intellij.LivySubmit http://localhost:8998/sessions/${sessionId} $className"
 }

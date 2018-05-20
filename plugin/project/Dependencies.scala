@@ -24,5 +24,8 @@ object Dependencies {
     "org.apache.livy" %% "livy-scala-api" % livyVersion
   )
 
-  val mainDependencies: Seq[ModuleID] = http4sGroup ++ circeGroup ++ livyGroup :+ scalaTest
+  val mainDependencies: Seq[ModuleID] = http4sGroup ++
+    circeGroup ++
+    livyGroup :+
+    scalaTest
 }
